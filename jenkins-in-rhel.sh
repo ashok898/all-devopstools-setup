@@ -495,3 +495,93 @@ Nov 21 20:47:52 rhel-vm jenkins[28981]: 2025-11-21 20:47:52.353+0000 [id=63]    
 [root@rhel-vm opt]#
 
 
+++++++++++++++++++++++Troublshooting disk space in azure +#################
+
+Here’s a clear summary of the steps we took (and why) to resolve the Jenkins error:
+
+***
+
+### **Problem**
+
+*   Jenkins showed:  
+    **“Disk space is below threshold of 1.00 GiB. Only \~163 MB left on /tmp.”**
+*   Root cause:  
+    The root filesystem (`/`) was only **2 GB**, even though the Azure OS disk was **64 GB**. This happened because the root logical volume was never extended to use the full disk.
+
+***
+
+### **Steps Taken to Fix It**
+
+
+
+#### ✅ 1. **Diagnosed the Issue**
+
+*   Checked disk usage:
+    ```bash
+    df -Th /tmp
+    ```
+    Output showed:
+        /dev/mapper/rootvg-rootlv xfs  2.0G  1.9G  164M  92% /
+*   Confirmed that `/tmp` is part of `/` and the root LV is only 2 GB.
+
+***
+
+#### ✅ 2. **Checked Azure Disk Size**
+
+*   Verified in Azure Portal that the OS disk is **64 GB**, so plenty of space is available but unused.
+
+***
+
+#### ✅ 3. **Extended the Root Logical Volume**
+
+*   Checked free space in Volume Group:
+    ```bash
+    sudo vgdisplay
+    ```
+*   Extended the LV to use all free space:
+    ```bash
+    sudo lvextend -l +100%FREE /dev/mapper/rootvg-rootlv
+    ```
+
+***
+
+#### ✅ 4. **Grew the Filesystem**
+
+*   Since RHEL uses XFS by default:
+    ```bash
+    sudo xfs_growfs /
+    ```
+
+***
+
+#### ✅ 5. **Verified New Size**
+
+*   Checked again:
+    ```bash
+    df -Th /
+    ```
+    Now root should show something like:
+        /dev/mapper/rootvg-rootlv xfs  64G  2G  62G  4% /
+
+***
+
+#### ✅ 6. **Restarted Jenkins**
+
+*   Finally:
+    ```bash
+    sudo systemctl restart jenkins
+    ```
+*   Clicked **“Bring this node back online”** in Jenkins UI.
+
+***
+
+### **Result**
+
+*   Jenkins no longer complains about low disk space because `/tmp` now has plenty of free space.
+*   Builds can run normally.
+
+***
+
+✅ Do you want me to **give you the exact command sequence as a single script** so you can reuse it for any similar Azure RHEL VM? Or should I prepare **a detailed guide with screenshots for Azure + Linux steps**?
+
+
