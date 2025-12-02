@@ -302,4 +302,35 @@ ok=1 failed=0
 ✔ Proper folder structure
 ✔ Virtual environment
 ✔ A verified working playbook
+10  apt update && apt upgrade -y
+   11  sudo apt install -y python3-pip python3-venv unzip curl git
+   12  pip install --upgrade pip
+   13  pip install ansible
+   14  sudo apt install python3.12-venv -y
+   15  python3 -m venv ansible-venv
+   16  source ansible-venv/bin/activate
+   17  pip install --upgrade pip
+   18  pip install ansible
+   19  ansible --version
+   20  python --version
+   21  echo "source ~/ansible-venv/bin/activate" >> ~/.bashrc
+   22  source ~/.bashrc
+   23  ansible-galaxy collection install azure.azcollection
+   24  ansible --version
+   25  top
+   26  htop
+   27  free -h
+   28  df -h
+   29  ll
+   30  ansible-galaxy collection install azure.azcollection
+   31  mkdir -p ~/ansible-azure-labs/{playbooks,inventories,vars,roles}
+   32  cd ~/ansible-azure-labs
+   37  vi inventories/hosts.ini
+   38  ansible-playbook -i inventories/host.ini
+   39  vi playbooks/ping_local.yml
+   41  ansible-playbook -i inventories/hosts.ini playbooks/ping_local.yml
+  
+
+<img width="1607" height="502" alt="image" src="https://github.com/user-attachments/assets/8ab3a024-c11f-488b-9626-4d6c8a26c203" />
+
 
