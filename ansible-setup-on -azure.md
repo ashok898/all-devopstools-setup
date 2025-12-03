@@ -334,3 +334,244 @@ ok=1 failed=0
 <img width="1607" height="502" alt="image" src="https://github.com/user-attachments/assets/8ab3a024-c11f-488b-9626-4d6c8a26c203" />
 
 
+
+
+
+
+
+Got it. Let’s forget all the confusion and write **one clean, step-by-step guide** with the **exact commands and paths** that match what is working on your VM right now.
+
+I’ll break it into:
+
+* Part A – Azure side (Cloud Shell / your PC, **not** on VM)
+* Part B – Ubuntu VM setup (everything in `/root`)
+* Part C – Test with Ansible playbook
+
+---
+
+## 🅰️ Part A – Azure side (Cloud Shell or your local machine)
+
+### 1. Login and get Subscription ID
+
+**Run in Cloud Shell or your PC (NOT on the VM):**
+
+```bash
+az login
+SUBSCRIPTION_ID=$(az account show --query id -o tsv)
+echo $SUBSCRIPTION_ID
+```
+
+Copy the `SUBSCRIPTION_ID`.
+
+### 2. Reset / get service principal credentials
+
+You already have `ansible-app`, but we reset its secret to be sure:
+
+```bash
+az ad sp credential reset --name "ansible-app" \
+  --query "{clientId:appId, clientSecret:password, tenant:tenant}" -o json
+```
+
+From this output, copy:
+
+* `clientId` → this is **CLIENT_ID**
+* `clientSecret` → this is **CLIENT_SECRET**
+* `tenant` → this is **TENANT_ID**
+
+You now have:
+
+* SUBSCRIPTION_ID
+* CLIENT_ID
+* CLIENT_SECRET
+* TENANT_ID
+
+Keep them safe.
+
+---
+
+## 🅱️ Part B – On the Ubuntu VM (everything as root in `/root`)
+
+You are usually at:
+
+```bash
+root@ansible-azure:~#
+pwd          # shows /root
+```
+
+### 1. Install system packages
+
+**Run in `/root`:**
+
+```bash
+sudo apt update -y
+sudo apt install -y python3 python3-pip python3-venv git curl
+```
+
+### 2. Create and activate virtual environment
+
+**Run in `/root`:**
+
+```bash
+python3 -m venv /root/ansible-venv
+source /root/ansible-venv/bin/activate
+```
+
+Your prompt should look like:
+
+```bash
+(ansible-venv) root@ansible-azure:~#
+```
+
+### 3. Install Ansible
+
+**Still in `/root` with venv active:**
+
+```bash
+pip install --upgrade pip
+pip install ansible
+```
+
+### 4. Install Azure Ansible collection
+
+**Still in `/root` with venv active:**
+
+```bash
+ansible-galaxy collection install azure.azcollection
+```
+
+This installed the collection under:
+
+```text
+/root/ansible-venv/lib/python3.10/site-packages/ansible_collections/azure/azcollection
+```
+
+### 5. Install the collection’s Python dependencies
+
+**Still in `/root` with venv active:**
+
+```bash
+pip install -r /root/ansible-venv/lib/python3.10/site-packages/ansible_collections/azure/azcollection/requirements.txt
+```
+
+### 6. Install Azure CLI (this fixes `azure.cli` error)
+
+**Still in `/root` (venv can be active or not, doesn’t matter):**
+
+```bash
+curl -sL https://aka.ms/InstallAzureCLIDeb | bash
+```
+
+Let this finish completely.
+
+After that, if needed, reactivate venv:
+
+```bash
+source /root/ansible-venv/bin/activate
+```
+
+### 7. Set Azure environment variables
+
+**In `/root` with venv active:**
+
+Replace with your actual values:
+
+```bash
+export AZURE_SUBSCRIPTION_ID="YOUR_SUBSCRIPTION_ID"
+export AZURE_CLIENT_ID="YOUR_CLIENT_ID"
+export AZURE_SECRET="YOUR_CLIENT_SECRET"
+export AZURE_TENANT="YOUR_TENANT_ID"
+```
+
+Check they’re set:
+
+```bash
+env | grep AZURE_
+```
+
+To make them persistent:
+
+```bash
+cat << 'EOF' >> /root/.bashrc
+export AZURE_SUBSCRIPTION_ID="YOUR_SUBSCRIPTION_ID"
+export AZURE_CLIENT_ID="YOUR_CLIENT_ID"
+export AZURE_SECRET="YOUR_CLIENT_SECRET"
+export AZURE_TENANT="YOUR_TENANT_ID"
+EOF
+```
+
+Later, when you log in again:
+
+```bash
+source /root/.bashrc
+source /root/ansible-venv/bin/activate
+```
+
+---
+
+## 🅲 Part C – Ansible test setup (in `/root/ansible-test`)
+
+### 1. Create project folder
+
+**Run in `/root` (venv active):**
+
+```bash
+mkdir -p /root/ansible-test
+cd /root/ansible-test
+pwd        # should show /root/ansible-test
+```
+
+### 2. Create `inventory.ini`
+
+**Run in `/root/ansible-test`:**
+
+```bash
+cat > /root/ansible-test/inventory.ini << 'EOF'
+[local]
+localhost ansible_connection=local ansible_python_interpreter=/root/ansible-venv/bin/python
+EOF
+```
+
+> `ansible_python_interpreter` is important: it forces Ansible to use the Python from your venv where all Azure stuff is installed.
+
+### 3. Create `test_azure.yml`
+
+**Run in `/root/ansible-test`:**
+
+```bash
+cat > /root/ansible-test/test_azure.yml << 'EOF'
+---
+- hosts: local
+  connection: local
+  gather_facts: false
+  collections:
+    - azure.azcollection
+
+  tasks:
+    - name: Test Azure
+      azure_rm_resourcegroup_info:
+      register: out
+
+    - debug:
+        var: out.resourcegroups
+EOF
+```
+
+### 4. Run the playbook
+
+**Make sure you’re in `/root/ansible-test` and venv is active:**
+
+```bash
+cd /root/ansible-test
+source /root/ansible-venv/bin/activate
+ansible-playbook -i inventory.ini test_azure.yml
+```
+
+If everything is correct, you’ll see a list (or at least an empty list) of `resourcegroups` from your Azure subscription.
+
+---
+
+That’s the full **working process**, command by command, with **where to run each one**.
+If you want, next I can add a **second playbook** to create a VM using the same setup.
+
+
+
