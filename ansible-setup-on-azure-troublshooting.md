@@ -587,3 +587,7 @@ If you’d like, next I can:
 
 * Turn this into a nicely formatted `README.md` + `TROUBLESHOOTING.md` ready for GitHub,
 * Or help you add a **“destroy VM”** role, multiple VM support, tags, etc.
+
+
+<img width="1608" height="547" alt="image" src="https://github.com/user-attachments/assets/b2d12d09-08e8-4146-bc04-fdfaf24e7ce3" />
+
