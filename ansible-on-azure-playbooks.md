@@ -228,3 +228,6 @@ If you want, I can also generate:
 
 Just tell me:
 👉 **“Generate README”**
+
+
+<img width="1612" height="454" alt="image" src="https://github.com/user-attachments/assets/8c73a5a0-4d69-4a42-a820-d8d02d7d1133" />
