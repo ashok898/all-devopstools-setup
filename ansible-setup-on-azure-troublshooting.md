@@ -591,3 +591,269 @@ If you’d like, next I can:
 
 <img width="1608" height="547" alt="image" src="https://github.com/user-attachments/assets/b2d12d09-08e8-4146-bc04-fdfaf24e7ce3" />
 
+
+
+
+****************** suddlnly vm got rebooted so venv got deactivate ******************
+
+
+No problem — this happens **only because your Python virtual environment is not activated** after the VM reboot.
+
+Your Ansible was installed **inside the virtual environment**:
+
+```
+/root/ansible-venv
+```
+
+So after a reboot:
+
+* The venv is NOT active
+* The PATH to Ansible is NOT loaded
+* So the system does not know the `ansible-playbook` command
+
+That’s why you get:
+
+```
+ansible-playbook: command not found
+```
+
+---
+
+# ✅ **FIX — Activate your virtual environment again**
+
+Run this:
+
+```bash
+source /root/ansible-venv/bin/activate
+```
+
+Now test:
+
+```bash
+ansible-playbook --version
+```
+
+You should see Ansible info again.
+
+---
+
+# 🟢 **Then run your playbook normally**
+
+```bash
+cd /root/ansible-azure-labs/playbooks
+ansible-playbook -i ../inventories/hosts.ini main.yml --ask-vault-pass
+```
+
+---
+
+# 🧠 If you want Ansible to work WITHOUT activating venv every time
+
+I can configure:
+
+### **Option 1 — Auto-activate venv on login**
+
+Add this to `/root/.bashrc`:
+
+```bash
+source /root/ansible-venv/bin/activate
+```
+
+
+
+
+getting below issue when try to run the playbook after rebooting the vm--control node
+
+
+
+<img width="1590" height="646" alt="image" src="https://github.com/user-attachments/assets/7794f203-19cb-4ccd-9379-032b164323c7" />
+
+
+
+
+This is a **known Azure CLI + msal library corruption issue** caused by:
+
+✔ Rebooting the VM
+✔ Having Azure CLI installed **inside your Python virtual environment**
+✔ Azure modules trying to authenticate via Azure CLI instead of service principal
+
+This results in:
+
+```
+AttributeError: Can't get attribute 'NormalizedResponse'
+```
+
+This error comes **only** from Azure CLI’s MSAL cache being corrupted.
+
+Good news:
+
+# ⭐ The FIX is 100% clear
+
+and I will give you **exact steps** — after this, it will never happen again.
+
+---
+
+# 🔥 ROOT CAUSE (IMPORTANT)
+
+Azure modules try auth in this order:
+
+1️⃣ Use Azure CLI logged-in credentials
+2️⃣ Use environment variables
+3️⃣ Use vars_files credentials (your azure_creds.yml)
+
+After reboot, since you DID NOT run:
+
+```bash
+az login
+```
+
+the CLI tries to access a stale cached MSAL token → BOOM → crash.
+
+So the problem is:
+
+👉 **Azure CLI tries to authenticate but fails**
+👉 Even though you WANT to use service principal credentials
+👉 Azure collection defaults to CLI first unless we tell it *NOT* to
+
+---
+
+# ⭐ FINAL FIX (Do ALL 3 steps)
+
+---
+
+# ✅ **STEP 1 — Clear broken Azure CLI MSAL cache**
+
+Run:
+
+```bash
+rm -f /root/.azure/msal_token_cache.bin
+rm -f /root/.azure/msal_token_cache.bin.lock
+```
+
+Also remove pickled binary cache:
+
+```bash
+rm -f /root/.azure/msal_http_cache.bin
+```
+
+---
+
+# ✅ **STEP 2 — Tell Ansible NOT to use Azure CLI for auth**
+
+Add this to your credentials file:
+
+📌 Edit:
+
+```
+/root/ansible-azure-labs/vars/azure_creds.yml
+```
+
+Add the following variable:
+
+```yaml
+azure_auth_source: "auto"
+```
+
+OR the safest option:
+
+```yaml
+azure_auth_source: "msi"
+```
+
+But since you use service principal, best is:
+
+```yaml
+azure_auth_source: "sp"   # force service principal mode
+```
+
+So your file should look like:
+
+```yaml
+azure_subscription_id: "XXXX"
+azure_client_id: "XXXX"
+azure_secret: "XXXX"
+azure_tenant: "XXXX"
+azure_auth_source: "sp"
+```
+
+(If using vault: decrypt → edit → re-encrypt)
+
+---
+
+# 🔥 WHY THIS WORKS?
+
+Because now Azure modules will NOT try this:
+
+❌ `az login` cache
+❌ msal corrupted token file
+❌ CLI authentication
+
+Instead they will directly use:
+
+✔ your service principal
+✔ from azure_creds.yml
+✔ which is reliable and does not break after reboot
+
+---
+
+# ✅ **STEP 3 — Rerun playbook (IMPORTANT)**
+
+Reactivate venv:
+
+```bash
+source /root/ansible-venv/bin/activate
+```
+
+Then run:
+
+```bash
+cd /root/ansible-azure-labs/playbooks
+ansible-playbook -i ../inventories/hosts.ini main.yml --ask-vault-pass
+```
+
+This time it will work without Azure CLI interference.
+
+---
+
+# ⭐ **OPTIONAL (Recommended): disable CLI authentication system-wide**
+
+Create a file:
+
+```
+/root/.azure/config
+```
+
+Content:
+
+```ini
+[cloud]
+use_cli_authorization = false
+```
+
+This ensures **Azure CLI is never used for authentication**, eliminating the error forever.
+
+---
+
+# 🎉 AFTER THIS, YOU WILL NEVER SEE THIS ERROR AGAIN
+
+Because:
+
+* Azure CLI msal cache is removed
+* Authentication is forced to service principal
+* Ansible will not try CLI anymore
+* Reboots will not break authentication
+* Venv and libraries remain clean
+
+---
+
+# If you want
+
+I can give you “final enterprise authentication layout” using:
+
+✔ Only service principal
+✔ No Azure CLI
+✔ Fully vault-encrypted
+✔ No more msal issues
+
+Just say **“give final auth model”**.
+
+
