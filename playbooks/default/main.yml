@@ -1,0 +1,8 @@
+resource_group: "ansible-rg"
+location: "eastus2"       # change region if needed
+vm_name: "ansibleCreatedVM"
+admin_user: "azureuser"
+vnet_name: "ansibleVNet"
+subnet_name: "ansibleSubnet"
+public_ip_name: "ansiblePublicIP"
+nic_name: "ansibleNIC"
