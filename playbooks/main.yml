@@ -1,0 +1,13 @@
+---
+- hosts: local
+  connection: local
+  gather_facts: false
+
+  vars_files:
+    - ../vars/azure_creds.yml
+
+  collections:
+    - azure.azcollection
+
+  roles:
+    - azure_vm
