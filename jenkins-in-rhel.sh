@@ -29,6 +29,17 @@ sudo systemctl edit jenkins
 # ExecStart=
 # ExecStart=/opt/jdk-21/bin/java -Djava.awt.headless=true -jar /usr/share/java/jenkins.war --httpPort=8080 --webroot=/var/cache/jenkins/war
 
+
+
+sudo systemctl edit jenkins
+
+[Service]
+Restart=always
+RestartSec=10
+Environment="JAVA_OPTS=-Djava.io.tempdir=/var/tmp"
+
+
+
 sudo systemctl daemon-reload
 
 # --- Open firewall port ---
