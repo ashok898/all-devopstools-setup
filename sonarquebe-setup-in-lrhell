@@ -38,5 +38,16 @@ echo "su - sonar"
 echo "sh /opt/sonarqube/bin/linux-x86-64/sonar.sh start"
 echo "Then access SonarQube at http://<RHEL_VM_IP>:9000"
 echo "Default login: admin / admin"
-~
+
+
+
+run after this
+
+[root@rhel-vm ~]# su - sonar
+Last login: Sat Jan  3 16:37:12 UTC 2026 on pts/0
+[sonar@rhel-vm ~]$ sh /opt/sonarqube/bin/linux-x86-64/sonar.sh start
+Starting SonarQube...
+Started SonarQube.
+[sonar@rhel-vm ~]$ sh /opt/sonarqube/bin/linux-x86-64/sonar.sh status
+SonarQube is running (235350).
 
