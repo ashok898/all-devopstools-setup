@@ -1,32 +1,42 @@
+
+#!/bin/bash
+# SonarQube installation script for RHEL
+
+set -e
+
 # Update system
-sudo yum update -y
+yum update -y
 
 # Install prerequisites
-sudo yum install -y wget unzip postgresql-server postgresql-contrib
+yum install -y wget unzip java-17-openjdk firewalld
 
-# Initialize and start PostgreSQL
-sudo postgresql-setup initdb
-sudo systemctl enable postgresql
-sudo systemctl start postgresql
+# Start and enable firewalld
+systemctl enable firewalld
+systemctl start firewalld
 
-# Create SonarQube DB and user
-sudo -u postgres psql -c "CREATE DATABASE sonarqube;"
-sudo -u postgres psql -c "CREATE USER sonar WITH ENCRYPTED PASSWORD 'sonar';"
-sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE sonarqube TO sonar;"
-
-# Download SonarQube (example: 10.5)
+# Download SonarQube (LTS version 8.9.6)
 cd /opt
-wget https://binaries.sonarsource.com/Distribution/sonarqube/sonarqube-10.5.0.90531.zip
-unzip sonarqube-10.5.0.90531.zip
-ln -sfn sonarqube-10.5.0.90531 sonarqube
+wget https://binaries.sonarsource.com/Distribution/sonarqube/sonarqube-8.9.6.50800.zip
+unzip sonarqube-8.9.6.50800.zip
 
-# Configure DB connection
-sudo sed -i 's/^#sonar.jdbc.username=/sonar.jdbc.username=sonar/' /opt/sonarqube/conf/sonar.properties
-sudo sed -i 's/^#sonar.jdbc.password=/sonar.jdbc.password=sonar/' /opt/sonarqube/conf/sonar.properties
-sudo sed -i 's|^#sonar.jdbc.url=jdbc:postgresql.*|sonar.jdbc.url=jdbc:postgresql://localhost/sonarqube|' /opt/sonarqube/conf/sonar.properties
+# Create sonar user
+id -u sonar &>/dev/null || useradd sonar
 
-# Start SonarQube
-/opt/sonarqube/bin/linux-x86-64/sonar.sh start
+# Set ownership and permissions
+chown -R sonar:sonar sonarqube-8.9.6.50800
+chmod -R 755 sonarqube-8.9.6.50800
 
-# Verify SonarQube
-curl http://localhost:9000
+# Create symlink for convenience
+ln -sfn sonarqube-8.9.6.50800 sonarqube
+
+# Open firewall port 9000
+firewall-cmd --permanent --add-port=9000/tcp
+firewall-cmd --reload
+
+echo "✅ SonarQube installed. Switch to 'sonar' user and start manually:"
+echo "su - sonar"
+echo "sh /opt/sonarqube/bin/linux-x86-64/sonar.sh start"
+echo "Then access SonarQube at http://<RHEL_VM_IP>:9000"
+echo "Default login: admin / admin"
+~
+
