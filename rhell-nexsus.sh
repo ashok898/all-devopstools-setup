@@ -66,3 +66,12 @@ firewall-cmd --reload
 
 echo "✅ Nexus installation complete. Checking service status..."
 systemctl status nexus --no-pager
+
+
+
+
+nexus Container
+
+[root@rhel-vm ~]# sudo mkdir -p /nexus-data
+[root@rhel-vm ~]# sudo chown -R 200:200 /nexus-data
+[root@rhel-vm ~]# docker run -d --name nexus -p 8087:8081 -v /nexus-data:/nexus-data sonatype/nexus3
