@@ -72,4 +72,4 @@ drwxr-xr-x. 9 root root       121 Oct 18  2023 jdk-21
 drwxr-xr-x. 2 root root         6 Dec 23 10:01 railroot_proj
 drwxr-xr-x. 2 root root         6 Dec 19 21:17 railrootweb
 -rw-r--r--. 1 root root      1006 Jan  3 17:59 sonarqube.sh
-[root@rhel-vm ~]#
+[root@rhel-vm ~]# curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash  # to install the azure cli
