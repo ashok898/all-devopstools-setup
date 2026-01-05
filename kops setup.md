@@ -14,6 +14,22 @@ drwxr-xr-x. 2 root root         6 Dec 23 10:01 railroot_proj
 drwxr-xr-x. 2 root root         6 Dec 19 21:17 railrootweb
 -rw-r--r--. 1 root root      1006 Jan  3 17:59 sonarqube.sh
 [root@rhel-vm ~]# vi .bashrc
+[root@rhel-vm ~]# cat .bashrc
+# .bashrc
+
+# User specific aliases and functions
+
+alias rm='rm -i'
+alias cp='cp -i'
+alias mv='mv -i'
+
+# Source global definitions
+if [ -f /etc/bashrc ]; then
+        . /etc/bashrc
+fi
+export PATH=$PATH:/use/local/bin/
+[root@rhel-vm ~]#
+
 [root@rhel-vm ~]# sudo mount -o remount, rw/
 mount: rw/: mount point does not exist.
 [root@rhel-vm ~]# sudo mount -o remount rw /
